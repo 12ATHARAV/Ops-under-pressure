@@ -5,17 +5,41 @@
 
 ---
 
+## 🌐 Live Production Deployment
+
+The entire platform is deployed live on **AWS Cloud** with automated CI/CD and production-grade HTTPS encryption:
+
+* **Live Web Application**: [https://ops-pressure-demo.duckdns.org](https://ops-pressure-demo.duckdns.org)
+* **Interactive API Documentation (Swagger)**: [https://ops-pressure-demo.duckdns.org/docs](https://ops-pressure-demo.duckdns.org/docs)
+* **API Health Check**: [https://ops-pressure-demo.duckdns.org/api/health](https://ops-pressure-demo.duckdns.org/api/health)
+* **GitHub Repository**: [https://github.com/12ATHARAV/Ops-under-pressure](https://github.com/12ATHARAV/Ops-under-pressure)
+
+| Infrastructure Component | Specification |
+| :--- | :--- |
+| **Cloud Provider & Region** | AWS Asia Pacific (Mumbai) `ap-south-1` |
+| **Compute Instance** | Amazon EC2 `c7i-flex.large` (Ubuntu 24.04 LTS, 64-bit x86) |
+| **Public IP Address** | `65.1.3.164` |
+| **Domain & DNS** | `ops-pressure-demo.duckdns.org` (DuckDNS Dynamic DNS) |
+| **TLS / SSL Security** | Let's Encrypt (Certbot), auto-renewing HTTPS with automatic 301 HTTP $\to$ HTTPS redirection |
+| **Edge & Proxy** | Host Nginx reverse proxy terminating TLS and routing to Docker containers |
+| **Orchestration** | Multi-container Docker Compose (`web`, `api`, `worker`, `postgres`) |
+| **CI/CD Pipeline** | GitHub Actions with automated regression testing, Docker verification, and zero-downtime deployment |
+
+---
+
 ## Table of Contents
-1. [Executive Summary & Problem Statement](#executive-summary--problem-statement)
-2. [Quick Start (Docker & Local Execution)](#quick-start)
-3. [Seeded Demo Personas & Credentials](#seeded-demo-personas--credentials)
-4. [Challenge Requirements & Architectural Fulfillment](#challenge-requirements--architectural-fulfillment)
-5. [The Six Correctness & Concurrency Guarantees](#the-six-correctness--concurrency-guarantees)
-6. [Interactive Demo Script for Reviewers](#interactive-demo-script-for-reviewers)
-7. [Running the Test Suites](#running-the-test-suites)
-8. [System Architecture & Data Flow](#system-architecture--data-flow)
-9. [Project Structure](#project-structure)
-10. [Known Limitations & Scalability Roadmap](#known-limitations--scalability-roadmap)
+1. [Live Production Deployment](#-live-production-deployment)
+2. [Executive Summary & Problem Statement](#executive-summary--problem-statement)
+3. [Quick Start (Live Access, Docker, & Local Execution)](#quick-start)
+4. [Seeded Demo Personas & Credentials](#seeded-demo-personas--credentials)
+5. [Challenge Requirements & Architectural Fulfillment](#challenge-requirements--architectural-fulfillment)
+6. [The Six Correctness & Concurrency Guarantees](#the-six-correctness--concurrency-guarantees)
+7. [Interactive Demo Script for Reviewers](#interactive-demo-script-for-reviewers)
+8. [Running the Test Suites](#running-the-test-suites)
+9. [System Architecture & Data Flow](#system-architecture--data-flow)
+10. [CI/CD Pipeline & Deployment Architecture](#cicd-pipeline--deployment-architecture)
+11. [Project Structure](#project-structure)
+12. [Known Limitations & Scalability Roadmap](#known-limitations--scalability-roadmap)
 
 ---
 
@@ -34,7 +58,17 @@ Growing engineering and operations organizations often coordinate critical opera
 
 ## Quick Start
 
-### Option A: One-Command Bootstrapping with Docker Compose (Recommended for Reviewers)
+### Option A: Review the Live Production System (Zero Setup Needed)
+
+Simply open your browser:
+* **Application**: [https://ops-pressure-demo.duckdns.org](https://ops-pressure-demo.duckdns.org)
+* **API Documentation**: [https://ops-pressure-demo.duckdns.org/docs](https://ops-pressure-demo.duckdns.org/docs)
+
+Log in using any of the [Seeded Demo Personas](#seeded-demo-personas--credentials) (e.g. `alice@example.com` / `Newtonite2026!Ops`).
+
+---
+
+### Option B: One-Command Bootstrapping with Docker Compose (Local Review)
 
 ```bash
 docker compose up --build
@@ -44,14 +78,14 @@ This single command orchestrates all required services:
 - **PostgreSQL 16**: Initialized with relational schemas, composite indexes, full-text search vectors, and seeded operational data.
 - **FastAPI API Server**: Runs database migrations, exposes REST endpoints with automatic OpenAPI documentation on **port 8000**.
 - **Background Outbox Worker**: Independent worker process polling for pending outbox events using `FOR UPDATE SKIP LOCKED`.
-- **React 18 Frontend**: Production build served via Nginx on **port 3000**.
+- **React 18 Frontend**: Production build served via Nginx on **port 3000** (or port 80).
 
 *Once healthy, open your browser to:* **`http://localhost:3000`**  
 *Interactive API Swagger Documentation:* **`http://localhost:8000/docs`**
 
 ---
 
-### Option B: Local Execution (Without Docker)
+### Option C: Local Execution (Without Docker)
 
 If you prefer to run services directly on your local machine with an existing PostgreSQL instance:
 
@@ -243,14 +277,59 @@ pytest -v
 
 ---
 
+## CI/CD Pipeline & Deployment Architecture
+
+```
+┌────────────────────────────────────────────────────────────────────────────────────────┐
+│                          CONTINUOUS INTEGRATION & DEPLOYMENT                           │
+├────────────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                        │
+│   GitHub Push to main / master                                                         │
+│     │                                                                                  │
+│     ├── 1. Frontend Test & Build                                                       │
+│     │      └── Node.js 20 ──> npm ci ──> tsc (Typecheck) ──> vite build (Bundle)       │
+│     │                                                                                  │
+│     ├── 2. Backend Tests & Concurrency Verification                                    │
+│     │      ├── PostgreSQL 16 Alpine Service Container                                  │
+│     │      ├── Python 3.12 ──> pip install -r requirements.txt                         │
+│     │      ├── alembic upgrade head (Schema Migrations)                                │
+│     │      ├── python -m app.seed (15 Users, 3 Teams, 229 Requests)                    │
+│     │      ├── python test_local_suite.py (8-Suite Isolation & Concurrency Verification)│
+│     │      └── pytest -v (25 Automated Regression Tests)                               │
+│     │                                                                                  │
+│     ├── 3. Docker Container Build Verification                                         │
+│     │      └── docker compose build (Validates API, Worker, Web & DB Dockerfiles)      │
+│     │                                                                                  │
+│     └── 4. Production CD to AWS EC2 (Mumbai ap-south-1)                                │
+│            ├── SSH into EC2 Instance (65.1.3.164) via Private Key Secrets              │
+│            ├── Pull latest code from GitHub                                            │
+│            ├── Zero-Downtime Docker Compose rolling rebuild (`docker compose up -d`)   │
+│            └── Health check verification on https://ops-pressure-demo.duckdns.org      │
+│                                                                                        │
+└────────────────────────────────────────────────────────────────────────────────────────┘
+```
+
+The production deployment combines **Host-level TLS Termination** with **Containerized Workloads**:
+1. **Host Nginx with Let's Encrypt**: Manages ports `80` (HTTP) and `443` (HTTPS) with automated certificate renewals via `certbot.timer`. It handles SSL negotiation, forces HTTPS redirection, and terminates TLS.
+2. **Reverse Proxy Routing**:
+   - `https://ops-pressure-demo.duckdns.org/` $\to$ Proxied internally to `http://127.0.0.1:3000` (Docker Web / React frontend).
+   - `https://ops-pressure-demo.duckdns.org/api/` $\to$ Proxied internally to `http://127.0.0.1:8000/` (FastAPI backend).
+   - `https://ops-pressure-demo.duckdns.org/docs` $\to$ Proxied directly to FastAPI Swagger documentation.
+3. **Zero CORS & Zero Mixed-Content Hazard**: The browser communicates entirely over HTTPS to the same origin (`ops-pressure-demo.duckdns.org`), eliminating CORS latency and browser security blocks.
+
+---
+
 ## Project Structure
 
 ```
+├── .github/
+│   └── workflows/
+│       └── ci-cd.yml               # Automated CI/CD (Test, Build, Docker, EC2 Deploy)
 ├── docker-compose.yml              # Multi-container orchestration (DB, API, Worker, Web)
 ├── README.md                       # Comprehensive project guide & evaluation brief
 ├── ENGINEERING_DECISIONS.md        # Architectural decisions, trade-offs, and omissions
-├── PROJECT_SHOWCASE.md             # In-depth architectural analysis & 25 interview Q&As
 ├── system_design.md                # System design specification (HLD & LLD)
+├── plan.md                         # Detailed system build plan & milestones
 ├── backend/
 │   ├── Dockerfile                  # Production container for FastAPI API & Worker
 │   ├── requirements.txt            # Python dependencies (FastAPI, SQLAlchemy, Pydantic)

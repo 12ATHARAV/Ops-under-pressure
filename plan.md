@@ -349,8 +349,14 @@ Target: one working day (~9-10h). Do steps in order; each ends in something runn
 - `ENGINEERING_DECISIONS.md` (Section 15).
 - Optional: architecture diagram (the one in Section 4).
 
-### Step 9: Polish + rehearsal (remaining time)
+### Step 9: Polish + rehearsal
 - Run the demo script twice. Fix rough edges. Re-read the brief's checklist.
+
+### Step 10: Production Cloud Deployment & CI/CD
+- Provision AWS EC2 `c7i-flex.large` in Asia Pacific (Mumbai) `ap-south-1`.
+- Configure DuckDNS Dynamic DNS (`ops-pressure-demo.duckdns.org` $\to$ `65.1.3.164`).
+- Set up Host Nginx reverse proxy with Let's Encrypt Certbot for A+ SSL/TLS and auto-renewals.
+- Configure GitHub Actions CI/CD pipeline (`.github/workflows/ci-cd.yml`) with automated tests and EC2 deployment.
 
 ### If time is short, cut in this order
 1. AI features, 2. duplicate detection, 3. presence badge, 4. notifications UI polish. **Never cut** the tests, the five critical behaviours, or the docs.

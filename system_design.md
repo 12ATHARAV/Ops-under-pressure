@@ -383,12 +383,28 @@ flowchart LR
 
 Key indexes: `requests(team_id, status, last_activity_at DESC, id DESC)`, partial indexes for unowned and active-stale queries, GIN on `search_tsv`, `request_events(request_id, id DESC)`, `outbox(next_attempt_at) WHERE status='pending'`.
 
-### 5.6 Deployment (v1)
+### 5.6 Deployment & Production Cloud Architecture
 
-`docker compose`: `postgres`, `api`, `worker` (same image, different command), `web`. Seed command creates teams, users with mixed roles, request types for each approval mode, and a few hundred requests with history.
+* **Live URL**: `https://ops-pressure-demo.duckdns.org`
+* **Swagger Docs**: `https://ops-pressure-demo.duckdns.org/docs`
+* **AWS Cloud Infrastructure**:
+  - Region: AWS Asia Pacific (Mumbai) `ap-south-1`
+  - Compute: Amazon EC2 `c7i-flex.large` (Ubuntu 24.04 LTS)
+  - Public IP: `65.1.3.164`
+  - DNS: `ops-pressure-demo.duckdns.org` (DuckDNS Dynamic DNS)
+  - TLS / SSL: Let's Encrypt Certbot with automated `certbot.timer` renewal and 301 HTTPS enforcement
+  - Reverse Proxy: Host Nginx routing `/` to containerized Web (port 3000), `/api/` and `/docs` to containerized FastAPI (port 8000)
+* **Container Stack (`docker-compose.yml`)**:
+  - `postgres`: PostgreSQL 16 Alpine with indexed schemas and relational persistence.
+  - `api`: FastAPI Python 3.12 running Uvicorn and Alembic migrations.
+  - `worker`: Transactional Outbox consumer polling with `FOR UPDATE SKIP LOCKED`.
+  - `web`: Vite/React 18 production bundle served via containerized Nginx.
+* **CI/CD Automation (`.github/workflows/ci-cd.yml`)**:
+  - GitHub Actions running 8-suite component verification, 25-test pytest regression suite, frontend TypeScript build verification, and automated SSH deployment to EC2 on `main`.
 
 ### 5.7 Trade-offs to explain in review
 - Event log alongside current state, not full event sourcing: simpler reads, still a full audit trail.
 - Postgres as queue (outbox): no extra infrastructure, limited ceiling, easy to migrate later.
 - Polling over WebSockets: simpler and robust for v1; correctness doesn't depend on freshness.
 - Per-team roles: more realistic, but every request needs a membership check.
+- Host Nginx TLS termination: decouples SSL certificate renewal from Docker image builds, ensuring identical container runs locally, in CI, and on cloud VMs.

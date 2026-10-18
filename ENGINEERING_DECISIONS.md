@@ -106,6 +106,22 @@ Authorization is a FastAPI dependency (`require_permission("approve")`), so it's
 
 ---
 
+## 6. Host-Level Nginx TLS Termination with Automated Certbot (Not Container-Baked SSL)
+
+### Decision
+For our live AWS EC2 deployment (`https://ops-pressure-demo.duckdns.org`), TLS termination is handled by **Host Nginx + Let's Encrypt Certbot**, rather than baking SSL certificates or reverse proxy certbot routines into the Docker images.
+
+### Why
+- **Environment-agnostic containers**: The Docker Compose stack runs identically on a reviewer's local laptop, in GitHub Actions CI runners, and in production EC2 without missing certificate errors.
+- **Automated zero-downtime certificate renewals**: Let's Encrypt certificates renew automatically via `certbot.timer` without needing Docker container rebuilds or secrets mounting.
+- **Clean separation of concerns**: The application services (`api`, `web`, `worker`, `postgres`) focus strictly on business logic and persistence, while the host edge layer handles external TLS handshakes, HTTP $\to$ HTTPS 301 redirects, and DDOS/traffic filtering.
+
+### Trade-off
+- Requires installing Nginx and Certbot on the EC2 host during initial machine provisioning.
+- We accepted this because baking domain-specific certificates inside Docker containers breaks local developer ergonomics and GitHub Actions CI verification.
+
+---
+
 ## What We Intentionally Did Not Build
 
 | Feature | Reason |
