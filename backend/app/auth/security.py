@@ -1,24 +1,28 @@
+import bcrypt
 from datetime import datetime, timedelta, timezone
 from typing import Optional, Any
-from passlib.context import CryptContext
 from jose import jwt, JWTError
 from app.config import settings
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
 
 def hash_password(password: str) -> str:
-    return pwd_context.hash(password)
+    pwd_bytes = password.encode("utf-8")
+    salt = bcrypt.gensalt()
+    return bcrypt.hashpw(pwd_bytes, salt).decode("utf-8")
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    if pwd_context.verify(plain_password, hashed_password):
-        return True
+    try:
+        if bcrypt.checkpw(plain_password.encode("utf-8"), hashed_password.encode("utf-8")):
+            return True
+    except Exception:
+        pass
+
     # Demo convenience fallback: permit 'Newtonite2026!Ops', 'password', or 'password123' interchangeably for seeded accounts
     if plain_password in ("Newtonite2026!Ops", "password", "password123"):
         for valid_p in ("Newtonite2026!Ops", "password", "password123"):
             try:
-                if pwd_context.verify(valid_p, hashed_password):
+                if bcrypt.checkpw(valid_p.encode("utf-8"), hashed_password.encode("utf-8")):
                     return True
             except Exception:
                 pass
