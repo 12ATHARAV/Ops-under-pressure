@@ -5,6 +5,23 @@
 
 ---
 
+## Table of Contents
+1. [Live Production Deployment](#-live-production-deployment)
+2. [Executive Summary & Problem Statement](#executive-summary--problem-statement)
+3. [Quick Start (Live Access, Docker, & Local Execution)](#quick-start)
+4. [Seeded Demo Personas & Credentials](#seeded-demo-personas--credentials)
+5. [Challenge Requirements & Architectural Fulfillment](#challenge-requirements--architectural-fulfillment)
+6. [The Six Correctness & Concurrency Guarantees](#the-six-correctness--concurrency-guarantees)
+7. [Interactive Demo Script for Reviewers](#interactive-demo-script-for-reviewers)
+8. [Running the Test Suites](#running-the-test-suites)
+9. [System Architecture & Data Flow](#system-architecture--data-flow)
+10. [CI/CD Pipeline & Deployment Architecture](#cicd-pipeline--deployment-architecture)
+11. [Project Structure](#project-structure)
+12. [Known Limitations & Scalability Roadmap](#known-limitations--scalability-roadmap)
+
+
+---
+
 ## 🌐 Live Production Deployment
 
 The entire platform is deployed live on **AWS Cloud** with automated CI/CD and production-grade HTTPS encryption:
@@ -24,22 +41,6 @@ The entire platform is deployed live on **AWS Cloud** with automated CI/CD and p
 | **Edge & Proxy** | Host Nginx reverse proxy terminating TLS and routing to Docker containers |
 | **Orchestration** | Multi-container Docker Compose (`web`, `api`, `worker`, `postgres`) |
 | **CI/CD Pipeline** | GitHub Actions with automated regression testing, Docker verification, and zero-downtime deployment |
-
----
-
-## Table of Contents
-1. [Live Production Deployment](#-live-production-deployment)
-2. [Executive Summary & Problem Statement](#executive-summary--problem-statement)
-3. [Quick Start (Live Access, Docker, & Local Execution)](#quick-start)
-4. [Seeded Demo Personas & Credentials](#seeded-demo-personas--credentials)
-5. [Challenge Requirements & Architectural Fulfillment](#challenge-requirements--architectural-fulfillment)
-6. [The Six Correctness & Concurrency Guarantees](#the-six-correctness--concurrency-guarantees)
-7. [Interactive Demo Script for Reviewers](#interactive-demo-script-for-reviewers)
-8. [Running the Test Suites](#running-the-test-suites)
-9. [System Architecture & Data Flow](#system-architecture--data-flow)
-10. [CI/CD Pipeline & Deployment Architecture](#cicd-pipeline--deployment-architecture)
-11. [Project Structure](#project-structure)
-12. [Known Limitations & Scalability Roadmap](#known-limitations--scalability-roadmap)
 
 ---
 
